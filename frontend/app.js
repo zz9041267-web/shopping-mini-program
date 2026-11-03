@@ -1,19 +1,9 @@
-// app.js
-App({
-  onLaunch() {
-    // 展示本地存储能力
-    const logs = wx.getStorageSync('logs') || []
-    logs.unshift(Date.now())
-    wx.setStorageSync('logs', logs)
+const { API_BASE_URL } = require('./config/env')
+const { getLanguageData } = require('./utils/i18n')
 
-    // 登录
-    wx.login({
-      success: res => {
-        // 发送 res.code 到后台换取 openId, sessionKey, unionId
-      }
-    })
-  },
-  globalData: {
-    userInfo: null
-  }
+App({
+  globalData: { apiBase: API_BASE_URL, user: null, ...getLanguageData() },
+  onLaunch() { this.globalData.user = wx.getStorageSync('shop_user') || null; Object.assign(this.globalData, getLanguageData()) },
+  requireUser() { if (!this.globalData.user) { wx.reLaunch({ url: '/pages/login/login' }); return false } return true },
+  logout() { wx.removeStorageSync('shop_user'); this.globalData.user = null; wx.reLaunch({ url: '/pages/login/login' }) }
 })

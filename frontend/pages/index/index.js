@@ -1,49 +1,24 @@
-// index.js
-const defaultAvatarUrl = 'https://mmbiz.qpic.cn/mmbiz/icTdbqWNOwNRna42FI242Lcia07jQodd2FJGIYQfG0LAJGFxM4FbnQP6yfMxBgJ0F3YRqJCJ1aPAK2dQagdusBZg/0'
+const { request } = require('../../utils/api')
+const { getLanguageData, toggleLanguage, pick } = require('../../utils/i18n')
+const app = getApp()
 
 Page({
-  data: {
-    motto: 'Hello World',
-    userInfo: {
-      avatarUrl: defaultAvatarUrl,
-      nickName: '',
-    },
-    hasUserInfo: false,
-    canIUseGetUserProfile: wx.canIUse('getUserProfile'),
-    canIUseNicknameComp: wx.canIUse('input.type.nickname'),
-  },
-  bindViewTap() {
-    wx.navigateTo({
-      url: '../logs/logs'
-    })
-  },
-  onChooseAvatar(e) {
-    const { avatarUrl } = e.detail
-    const { nickName } = this.data.userInfo
-    this.setData({
-      "userInfo.avatarUrl": avatarUrl,
-      hasUserInfo: nickName && avatarUrl && avatarUrl !== defaultAvatarUrl,
-    })
-  },
-  onInputChange(e) {
-    const nickName = e.detail.value
-    const { avatarUrl } = this.data.userInfo
-    this.setData({
-      "userInfo.nickName": nickName,
-      hasUserInfo: nickName && avatarUrl && avatarUrl !== defaultAvatarUrl,
-    })
-  },
-  getUserProfile(e) {
-    // 推荐使用wx.getUserProfile获取用户信息，开发者每次通过该接口获取用户个人信息均需用户确认，开发者妥善保管用户快速填写的头像昵称，避免重复弹窗
-    wx.getUserProfile({
-      desc: '展示用户信息', // 声明获取用户个人信息后的用途，后续会展示在弹窗中，请谨慎填写
-      success: (res) => {
-        console.log(res)
-        this.setData({
-          userInfo: res.userInfo,
-          hasUserInfo: true
-        })
-      }
-    })
-  },
+  data: { ...getLanguageData(), rawCatalog: null, shop: {}, categories: [], products: {}, activeCategory: null, activeProducts: [], cart: {}, cartCount: 0, cartTotal: '0.00', selectorVisible: false, selection: null, loading: true, loadFailed: false },
+  onShow() { if (!app.requireUser()) return; if (app.globalData.user.role === 'admin') { wx.reLaunch({ url: '/pages/admin/admin' }); return }; this.setData(getLanguageData()); if (this.data.rawCatalog) this.renderCatalog(this.data.rawCatalog); else this.load(); this.syncCart() },
+  toggleLanguage() { const language = toggleLanguage(); Object.assign(app.globalData, language); this.setData(language); this.renderCatalog(this.data.rawCatalog); this.syncCart() },
+  load() { this.setData({ loading: true, loadFailed: false }); request('/api/catalog').then(data => { this.setData({ rawCatalog: data, loading: false }); this.renderCatalog(data) }).catch(() => this.setData({ loading: false, loadFailed: true })) },
+  renderProduct(item) { const displayName = pick(item, 'name', this.data.lang); const localize = set => set && ({ ...set, displayName: pick(set, 'name', this.data.lang), options: (set.options || []).map(option => ({ ...option, displayName: pick(option, 'name', this.data.lang) })) }); return { ...item, displayName, displayDescription: pick(item, 'description', this.data.lang), displayImage: (item.displayImagesBase64 || [])[0] || item.imageBase64 || '', initial: (displayName || '?').slice(0, 1), sizeSet: localize(item.sizeSet), colorSet: localize(item.colorSet) } },
+  renderCatalog(data) { if (!data) return; const shop = { ...data.shop, displayName: pick(data.shop, 'name', this.data.lang), displayNotice: pick(data.shop, 'notice', this.data.lang) }; const categories = (data.categories || []).map(item => ({ ...item, displayName: pick(item, 'name', this.data.lang) })); const products = {}; Object.keys(data.products || {}).forEach(id => { products[id] = data.products[id].map(item => this.renderProduct(item)) }); const activeCategory = categories.some(item => item.id === this.data.activeCategory) ? this.data.activeCategory : (categories[0] && categories[0].id); this.setData({ shop, categories, products, activeCategory, activeProducts: products[activeCategory] || [] }) },
+  selectCategory(e) { const id = e.currentTarget.dataset.id; this.setData({ activeCategory: id, activeProducts: this.data.products[id] || [] }) },
+  getCartSummary(cart) { let count = 0; let total = 0; Object.keys(cart).forEach(key => { const item = cart[key]; count += Number(item.quantity) || 0; total += (Number(item.quantity) || 0) * Number(item.price) }); return { cartCount: count, cartTotal: total.toFixed(2) } },
+  applyCart(cart, persist = true) { this.setData({ cart, ...this.getCartSummary(cart) }); if (persist) wx.setStorageSync('shop_cart', cart) },
+  syncCart() { this.applyCart(wx.getStorageSync('shop_cart') || {}, false) },
+  openSelector(e) { const product = this.data.activeProducts.find(item => String(item.id) === String(e.currentTarget.dataset.id)); if (!product || !product.sizeSet || !product.colorSet || !product.sizeSet.options.length || !product.colorSet.options.length) { wx.showToast({ title: this.data.t.specUnavailable, icon: 'none' }); return }; this.setData({ selectorVisible: true, selection: { product, sizeIndex: 0, colorIndex: 0, quantity: '1' } }) },
+  chooseSize(e) { this.setData({ 'selection.sizeIndex': Number(e.currentTarget.dataset.index) }) },
+  chooseColor(e) { this.setData({ 'selection.colorIndex': Number(e.currentTarget.dataset.index) }) },
+  selectionQuantity(e) { this.setData({ 'selection.quantity': e.detail.value }) },
+  closeSelector() { this.setData({ selectorVisible: false, selection: null }) },
+  confirmSelector() { const selection = this.data.selection; if (!selection) return; const { product } = selection; const size = product.sizeSet.options[selection.sizeIndex]; const color = product.colorSet.options[selection.colorIndex]; const parsed = Number.parseInt(selection.quantity, 10); const quantity = Number.isFinite(parsed) ? Math.max(1, parsed) : 1; const cart = { ...this.data.cart }; const used = Object.keys(cart).filter(key => String(cart[key].productId || cart[key].id) === String(product.id)).reduce((sum, key) => sum + (Number(cart[key].quantity) || 0), 0); if (used + quantity > product.stock) { wx.showToast({ title: this.data.t.stockInsufficient, icon: 'none' }); return }; const key = `${product.id}:${size.code}:${color.code}`; const current = cart[key]; cart[key] = { ...(current || { cartKey: key, id: product.id, productId: product.id, name: product.name, nameZh: product.nameZh, nameEn: product.nameEn, price: product.price, stock: product.stock, sizeCode: size.code, sizeLength: size.lengthValue, sizeWidth: size.widthValue, colorCode: color.code, colorNameZh: color.nameZh, colorNameEn: color.nameEn, colorHexValue: color.hexValue }), quantity: (Number(current && current.quantity) || 0) + quantity }; this.applyCart(cart); this.closeSelector() },
+  openProduct(e) { wx.navigateTo({ url: `/pages/product-detail/product-detail?id=${e.currentTarget.dataset.id}` }) },
+  toCart() { wx.navigateTo({ url: '/pages/cart/cart' }) }
 })

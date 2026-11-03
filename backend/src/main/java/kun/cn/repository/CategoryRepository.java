@@ -1,0 +1,1 @@
+package kun.cn.repository; import kun.cn.domain.Category; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*; public interface CategoryRepository extends JpaRepository<Category,Long>{ List<Category> findAllByOrderBySortOrderAsc(); }

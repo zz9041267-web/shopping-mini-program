@@ -1,10 +1,6 @@
-/**app.wxss**/
-.container {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  padding: 200rpx 0;
-  box-sizing: border-box;
-} 
+page { --bg: #f5f7f4; --surface: #ffffff; --ink: #17352d; --muted: #71827d; --line: #e3e9e5; --brand: #16765d; --brand-deep: #0c4f3e; --brand-soft: #e7f3ed; --accent: #e97938; --danger: #bd472f; background: var(--bg); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+button::after { border: 0; }
+.primary-btn { min-height: 88rpx; line-height: 88rpx; background: var(--brand); color: #fff; border-radius: 14rpx; font-size: 29rpx; font-weight: 700; box-shadow: 0 8rpx 18rpx rgba(22, 118, 93, .18); }
+.secondary-btn { min-height: 72rpx; line-height: 72rpx; border-radius: 12rpx; color: var(--brand-deep); background: var(--brand-soft); font-size: 25rpx; font-weight: 700; }
+.empty { padding: 140rpx 32rpx; color: var(--muted); text-align: center; font-size: 28rpx; line-height: 1.7; }
+.language-toggle { min-width: 64rpx; height: 56rpx; box-sizing: border-box; line-height: 54rpx; padding: 0 14rpx; border: 1rpx solid currentColor; border-radius: 12rpx; font-size: 22rpx; text-align: center; }

@@ -1,0 +1,17 @@
+<view class="detail-page">
+  <view wx:if="{{loading}}" class="empty">{{t.loadingMenu}}</view>
+  <view wx:elif="{{loadFailed || !product}}" class="empty">{{t.noOrders}}<br/><navigator class="empty-link" url="/pages/index/index">{{t.goMenu}}</navigator></view>
+  <block wx:else>
+    <view class="detail-topbar"><view class="detail-topbar-title">{{t.productDetails}}</view><view class="language-toggle" bindtap="toggleLanguage">{{t.language}}</view></view>
+    <swiper wx:if="{{product.detailImages.length}}" class="detail-swiper" indicator-dots indicator-color="rgba(255,255,255,.55)" indicator-active-color="#ffffff" circular>
+      <swiper-item wx:for="{{product.detailImages}}" wx:key="*this"><image class="detail-image" src="{{item}}" mode="widthFix" data-image="{{item}}" bindtap="previewImage"></image></swiper-item>
+    </swiper>
+    <view wx:else class="detail-empty-image">{{t.noDetailImages}}</view>
+    <view class="detail-content">
+      <view class="detail-title-row"><view class="detail-name">{{product.displayName}}</view><view class="detail-price">¥{{product.price}}</view></view>
+      <view class="detail-stock">{{t.stock}} {{product.stock}}</view>
+      <view class="detail-section"><view class="detail-section-title">{{t.detailIntroduction}}</view><view class="detail-description">{{product.displayDescription || '-'}}</view></view>
+    </view>
+    <view class="detail-action-bar"><view class="detail-cart" bindtap="toCart"><view class="detail-cart-count">{{quantity}}</view><view>{{t.cart}}</view></view><view class="detail-stepper"><block wx:if="{{quantity}}"><view class="detail-step minus" bindtap="minus">-</view><input class="detail-quantity-input" type="number" value="{{quantity}}" bindblur="setQuantity"/></block><view class="detail-step plus" bindtap="add">+</view></view></view>
+  </block>
+</view>

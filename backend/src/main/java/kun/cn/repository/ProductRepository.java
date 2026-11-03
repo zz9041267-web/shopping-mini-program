@@ -1,0 +1,1 @@
+package kun.cn.repository; import kun.cn.domain.Product; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*; public interface ProductRepository extends JpaRepository<Product,Long>{ List<Product> findByCategoryIdAndOnSaleTrueOrderByIdDesc(Long categoryId); List<Product> findAllByOrderByIdDesc(); }
